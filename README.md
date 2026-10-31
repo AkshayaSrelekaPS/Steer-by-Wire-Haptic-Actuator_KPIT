@@ -178,6 +178,10 @@ $$
 │   └── include/                       # Header interfaces
 ├── hardware/                          # Schematics & Circuit Designs
 │   └── bom.md                         # Detailed component sourcing & Sallen-Key filter specs
+├── ansys/                             # Multi-Physics FEA Structural & Thermal Simulation
+│   ├── ansys_fea_thermal_report.md    # Complete ANSYS Mechanical & Icepak verification report
+│   ├── fea_torsional_stress_distribution.png # 20.5 Nm shock load stress & angular deflection
+│   └── thermal_transient_junction_temp.png   # MOSFET continuous stall junction temp (T_j)
 ├── safety/                            # Automotive Functional Safety
 │   └── iso26262_safety_case.md        # ASIL-D HARA analysis & Safety Goals (SG-1 to SG-4)
 └── simulation/                        # Multi-Body Vehicle Dynamics Validation
