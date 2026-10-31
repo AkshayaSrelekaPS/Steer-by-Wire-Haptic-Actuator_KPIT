@@ -25,6 +25,14 @@ This repository implements an **automotive-grade Force-Feedback Steering Actuato
 
 ## 🏗️ System Architecture
 
+![Steer-by-Wire 2D Architecture Block Diagram](architecture_block_diagram.png)
+
+<p align="center">
+  <em>Figure 1: Modular System Architecture illustrating the 4 distinct ECE cyber-physical domains and bus interactions.</em>
+</p>
+
+![Steer-by-Wire 3D Conceptual Hardware Diagram](architecture_diagram.png)
+
 ```
                   +-------------------------------------------------------------+
                   |                 VEHICLE SENSORS / ADAS SIMULATOR           |
