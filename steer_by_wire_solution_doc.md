@@ -101,35 +101,42 @@ The microcontroller runs a deterministic $1\text{ kHz}$ control loop implementin
 #### 3. Progressive Potential Field & Assistive Haptic Barrier (Obstacle Mitigation):
 Rather than a late step-barrier after the vehicle enters danger, a **three-zone progressive repulsive field** is established:
 
-```math
+$$
 \tau_{\text{barrier}}(\theta, \omega) = \tau_{\text{zone}}(\theta) + \tau_{\text{damping}}(\omega)
-```
+$$
 
-* **Zone 1: Free Compliant Zone** ($|\theta| < \theta_{\text{warn}}$):
+**Zone 1: Free Compliant Zone ($|\theta| < \theta_{\text{warn}}$)**
+
 $$
 \tau_{\text{barrier}} = 0
 $$
+
 *(Normal steering feel; zero artificial interference).*
 
-* **Zone 2: Progressive Soft-Margin Resistance** ($\theta_{\text{warn}} \le |\theta| < \theta_{\text{limit}}$):
+**Zone 2: Progressive Soft-Margin Resistance ($\theta_{\text{warn}} \le |\theta| < \theta_{\text{limit}}$)**
+
 $$
 \tau_{\text{barrier}} = -K_1 \cdot \left(\frac{|\theta| - \theta_{\text{warn}}}{\theta_{\text{limit}} - \theta_{\text{warn}}}\right)^2 \cdot \operatorname{sgn}(\theta)
 $$
+
 *(A parabolic stiffness gradient ramps up counter-torque before crossing the unsafe boundary).*
 
-* **Zone 3: High-Impedance Dissipative Barrier** ($|\theta| \ge \theta_{\text{limit}}$):
+**Zone 3: High-Impedance Dissipative Barrier ($|\theta| \ge \theta_{\text{limit}}$)**
+
 $$
 \tau_{\text{barrier}} = -\min\Big(\tau_{\text{clamp}}, \; K_1 + K_2 \cdot (|\theta| - \theta_{\text{limit}}) + B_{\text{wall}} \cdot \max(0, \omega \cdot \operatorname{sgn}(\theta))\Big) \cdot \operatorname{sgn}(\theta)
 $$
+
 *(Imposes an assistive torque plateau combined with asymmetric one-way velocity damping).*
 
 > **💡 Asymmetric One-Way Damping ($\max(0, \omega)$):**  
 > Damping only opposes motion moving **deeper** into danger ($\omega > 0$). As soon as the driver steers back toward safety ($\omega < 0$), barrier resistance drops to zero, encouraging natural corrective recovery.
 
 #### 4. Driver Intentional Override & Clamping Protocol (UN R79 / ISO 26262 Compliance):
-```math
+
+$$
 \text{If } |\tau_{\text{human}}| > \tau_{\text{override}} \; (8.0\text{ Nm}) \quad \text{for } \Delta t > 150\text{ ms} \implies \tau_{\text{barrier}} \xrightarrow{\text{decay}} 0
-```
+$$
 * **Ergonomic Safety Clamp:** Motor output is strictly clamped to $\tau_{\text{clamp}} \le 5.5\text{ Nm}$ to prevent actuator runaway, motor stall current overloads, or driver wrist injury.
 * **Human Override Detection:** The inline reaction torque sensor continuously samples $\tau_{\text{human}}$. If the driver intentionally exerts an evasive counter-torque exceeding the override threshold ($\tau_{\text{human}} > \tau_{\text{override}} \approx 8.0\text{ Nm}$ for $\Delta t > 150\text{ ms}$), the system yields authority, softly decaying $\tau_{\text{barrier}} \to 0$ and allowing the driver full manual steering capability in emergency evasion scenarios.
 

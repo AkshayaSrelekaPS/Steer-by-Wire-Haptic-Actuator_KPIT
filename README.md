@@ -104,22 +104,28 @@ To prevent steering into blind-spot obstacles while complying with automotive sa
 
 #### Zone Breakdown
 
-* **Zone 1: Free Compliant Zone** ($|\theta| < \theta_{\text{warn}}$):
+**Zone 1: Free Compliant Zone ($|\theta| < \theta_{\text{warn}}$)**
+
 $$
 \tau_{\text{barrier}} = 0
 $$
+
 *No artificial interference; normal steering feel.*
 
-* **Zone 2: Progressive Soft-Margin Warning** ($\theta_{\text{warn}} \le |\theta| < \theta_{\text{limit}}$):
+**Zone 2: Progressive Soft-Margin Warning ($\theta_{\text{warn}} \le |\theta| < \theta_{\text{limit}}$)**
+
 $$
 \tau_{\text{barrier}} = -K_1 \cdot \left(\frac{|\theta| - \theta_{\text{warn}}}{\theta_{\text{limit}} - \theta_{\text{warn}}}\right)^2 \cdot \operatorname{sgn}(\theta)
 $$
+
 *A parabolic repulsive potential field creates smooth, escalating stiffness before crossing the lane hazard.*
 
-* **Zone 3: High-Impedance Dissipative Barrier** ($|\theta| \ge \theta_{\text{limit}}$):
+**Zone 3: High-Impedance Dissipative Barrier ($|\theta| \ge \theta_{\text{limit}}$)**
+
 $$
 \tau_{\text{barrier}} = -\min\Big(\tau_{\text{clamp}}, \; K_1 + K_2 \cdot (|\theta| - \theta_{\text{limit}}) + B_{\text{wall}} \cdot \max(0, \omega \cdot \operatorname{sgn}(\theta))\Big) \cdot \operatorname{sgn}(\theta)
 $$
+
 *Maximum assistive torque combined with asymmetric one-way velocity damping.*
 
 > **💡 Asymmetric One-Way Damping ($\max(0, \omega)$):**  
@@ -129,9 +135,9 @@ $$
 
 ### 3. Human Override & Functional Safety (UN R79 / ISO 26262)
 
-```math
+$$
 \text{If } |\tau_{\text{human}}| > \tau_{\text{override}} \; (8.0\text{ Nm}) \quad \text{for } \Delta t > 150\text{ ms} \implies \tau_{\text{barrier}} \xrightarrow{\text{decay}} 0
-```
+$$
 
 - **Ergonomic Safety Clamp:** Motor output is hardware-clamped to $\tau_{\text{clamp}} \le 5.5\text{ Nm}$ (preventing actuator stall current spikes, motor thermal burnout, and driver wrist strain).
 - **Driver Override Mandate (UN R79 / ISO 11270):** If an onboard sensor produces a false positive, the driver can deliberately overpower the system ($> 8.0\text{ Nm}$). The controller detects sustained human effort via the inline strain gauge, immediately decays the barrier, and yields full steering authority back to the driver.
