@@ -102,25 +102,25 @@ To prevent steering into blind-spot obstacles while complying with automotive sa
 \tau_{\text{barrier}}(\theta, \omega) = \tau_{\text{zone}}(\theta) + \tau_{\text{damping}}(\omega)
 ```
 
-#### Zone Breakdown:
+#### Zone Breakdown
 
-1. **Zone 1: Free Compliant Zone** ($|\theta| < \theta_{\text{warn}}$)
-   ```math
-   \tau_{\text{barrier}} = 0
-   ```
-   *No artificial interference; normal steering feel.*
+* **Zone 1: Free Compliant Zone** ($|\theta| < \theta_{\text{warn}}$):
+$$
+\tau_{\text{barrier}} = 0
+$$
+*No artificial interference; normal steering feel.*
 
-2. **Zone 2: Progressive Soft-Margin Warning** ($\theta_{\text{warn}} \le |\theta| < \theta_{\text{limit}}$)
-   ```math
-   \tau_{\text{barrier}} = -K_1 \cdot \left(\frac{|\theta| - \theta_{\text{warn}}}{\theta_{\text{limit}} - \theta_{\text{warn}}}\right)^2 \cdot \operatorname{sgn}(\theta)
-   ```
-   *A parabolic repulsive potential field creates smooth, escalating stiffness before crossing the lane hazard.*
+* **Zone 2: Progressive Soft-Margin Warning** ($\theta_{\text{warn}} \le |\theta| < \theta_{\text{limit}}$):
+$$
+\tau_{\text{barrier}} = -K_1 \cdot \left(\frac{|\theta| - \theta_{\text{warn}}}{\theta_{\text{limit}} - \theta_{\text{warn}}}\right)^2 \cdot \operatorname{sgn}(\theta)
+$$
+*A parabolic repulsive potential field creates smooth, escalating stiffness before crossing the lane hazard.*
 
-3. **Zone 3: High-Impedance Dissipative Barrier** ($|\theta| \ge \theta_{\text{limit}}$)
-   ```math
-   \tau_{\text{barrier}} = -\min\Big(\tau_{\text{clamp}}, \; K_1 + K_2 \cdot (|\theta| - \theta_{\text{limit}}) + B_{\text{wall}} \cdot \max(0, \omega \cdot \operatorname{sgn}(\theta))\Big) \cdot \operatorname{sgn}(\theta)
-   ```
-   *Maximum assistive torque combined with asymmetric one-way velocity damping.*
+* **Zone 3: High-Impedance Dissipative Barrier** ($|\theta| \ge \theta_{\text{limit}}$):
+$$
+\tau_{\text{barrier}} = -\min\Big(\tau_{\text{clamp}}, \; K_1 + K_2 \cdot (|\theta| - \theta_{\text{limit}}) + B_{\text{wall}} \cdot \max(0, \omega \cdot \operatorname{sgn}(\theta))\Big) \cdot \operatorname{sgn}(\theta)
+$$
+*Maximum assistive torque combined with asymmetric one-way velocity damping.*
 
 > **💡 Asymmetric One-Way Damping ($\max(0, \omega)$):**  
 > Damping only opposes motion moving **deeper** into the hazard ($\omega > 0$). When steering **back toward safety** ($\omega < 0$), barrier resistance immediately drops to zero, ensuring an effortless, natural recovery.

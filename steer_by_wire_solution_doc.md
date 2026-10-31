@@ -106,22 +106,22 @@ Rather than a late step-barrier after the vehicle enters danger, a **three-zone 
 ```
 
 * **Zone 1: Free Compliant Zone** ($|\theta| < \theta_{\text{warn}}$):
-  ```math
-  \tau_{\text{barrier}} = 0
-  ```
-  *(Normal steering feel; zero artificial interference).*
+$$
+\tau_{\text{barrier}} = 0
+$$
+*(Normal steering feel; zero artificial interference).*
 
 * **Zone 2: Progressive Soft-Margin Resistance** ($\theta_{\text{warn}} \le |\theta| < \theta_{\text{limit}}$):
-  ```math
-  \tau_{\text{barrier}} = -K_1 \cdot \left(\frac{|\theta| - \theta_{\text{warn}}}{\theta_{\text{limit}} - \theta_{\text{warn}}}\right)^2 \cdot \operatorname{sgn}(\theta)
-  ```
-  *(A parabolic stiffness gradient ramps up counter-torque before crossing the unsafe boundary).*
+$$
+\tau_{\text{barrier}} = -K_1 \cdot \left(\frac{|\theta| - \theta_{\text{warn}}}{\theta_{\text{limit}} - \theta_{\text{warn}}}\right)^2 \cdot \operatorname{sgn}(\theta)
+$$
+*(A parabolic stiffness gradient ramps up counter-torque before crossing the unsafe boundary).*
 
 * **Zone 3: High-Impedance Dissipative Barrier** ($|\theta| \ge \theta_{\text{limit}}$):
-  ```math
-  \tau_{\text{barrier}} = -\min\Big(\tau_{\text{clamp}}, \; K_1 + K_2 \cdot (|\theta| - \theta_{\text{limit}}) + B_{\text{wall}} \cdot \max(0, \omega \cdot \operatorname{sgn}(\theta))\Big) \cdot \operatorname{sgn}(\theta)
-  ```
-  *(Imposes an assistive torque plateau combined with asymmetric one-way velocity damping).*
+$$
+\tau_{\text{barrier}} = -\min\Big(\tau_{\text{clamp}}, \; K_1 + K_2 \cdot (|\theta| - \theta_{\text{limit}}) + B_{\text{wall}} \cdot \max(0, \omega \cdot \operatorname{sgn}(\theta))\Big) \cdot \operatorname{sgn}(\theta)
+$$
+*(Imposes an assistive torque plateau combined with asymmetric one-way velocity damping).*
 
 > **💡 Asymmetric One-Way Damping ($\max(0, \omega)$):**  
 > Damping only opposes motion moving **deeper** into danger ($\omega > 0$). As soon as the driver steers back toward safety ($\omega < 0$), barrier resistance drops to zero, encouraging natural corrective recovery.
