@@ -164,18 +164,26 @@ $$
 .
 ├── README.md                          # Project documentation & overview
 ├── steer_by_wire_solution_doc.md      # Detailed engineering & mathematical solution doc
+├── dashboard/                         # HTML5/JS Web SIL & Live HIL Telemetry Cockpit
+│   ├── index.html                     # Cockpit layout with Web Serial connect
+│   ├── style.css                      # Cyberpunk automotive cockpit styles
+│   └── telemetry.js                   # SIL physics engine & HIL Web Serial bridge
 ├── firmware/                          # MCU firmware (STM32 / ESP32)
+│   ├── CMakeLists.txt                 # Build configuration
 │   ├── src/
-│   │   ├── main.cpp                   # 1 kHz control loop, state machine
+│   │   ├── main.cpp                   # 1 kHz control loop, FreeRTOS tasks
 │   │   ├── impedance_controller.cpp   # Potential field, damping, virtual wall
 │   │   ├── can_telemetry.cpp          # CAN frame generation & arbitration
-│   │   └── sensor_drivers/            # AS5600, strain gauge AFE, INA240
-│   └── include/
+│   │   └── sensor_drivers/            # AS5600 12-bit I2C encoder driver
+│   └── include/                       # Header interfaces
 ├── hardware/                          # Schematics & Circuit Designs
-│   ├── schematics/                    # KiCad / PDF schematic files
-│   └── bom.md                         # Detailed component sourcing guide
-└── simulation/                        # Model validation
-    └── virtual_steering_model.py      # Python simulation of impedance response
+│   └── bom.md                         # Detailed component sourcing & Sallen-Key filter specs
+├── safety/                            # Automotive Functional Safety
+│   └── iso26262_safety_case.md        # ASIL-D HARA analysis & Safety Goals (SG-1 to SG-4)
+└── simulation/                        # Multi-Body Vehicle Dynamics Validation
+    ├── virtual_steering_model.py      # Python 2-DOF single-track bicycle model & simulation
+    ├── impedance_response_plot.png    # Validated torque-angle profiles (parking vs highway)
+    └── phase_portrait_override.png   # 150 ms driver panic override latency verification
 ```
 
 ---

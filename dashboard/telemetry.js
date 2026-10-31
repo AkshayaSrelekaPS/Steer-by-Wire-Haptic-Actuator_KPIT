@@ -221,6 +221,7 @@ function updateHazardStatus() {
 let tickCount = 0;
 
 function computePhysics() {
+  if (isHardwareConnected) return; // Driven by physical MCU in HIL mode
   // 1. Angular Velocity estimation: ω = dθ / dt
   state.steeringVelocity = (state.steeringAngle - state.previousAngle) * 50; // deg/s
   state.previousAngle = state.steeringAngle;
@@ -400,3 +401,113 @@ setInterval(() => {
 
 // CAN EMITTER AT 10 Hz
 setInterval(emitCanFrame, 100);
+
+
+// ============================================================================
+// WEB SERIAL API: HARDWARE-IN-THE-LOOP (HIL) LIVE BENCH INTEGRATION
+// ============================================================================
+let serialPort = null;
+let serialReader = null;
+let isHardwareConnected = false;
+
+const btnSerialConnect = document.getElementById('btnSerialConnect');
+const serialBtnText = document.getElementById('serialBtnText');
+const simStatusPill = document.getElementById('simStatusPill');
+const simStatusText = document.getElementById('simStatusText');
+
+if (btnSerialConnect) {
+  btnSerialConnect.addEventListener('click', async () => {
+    if (isHardwareConnected) {
+      await disconnectSerial();
+      return;
+    }
+    await connectSerial();
+  });
+}
+
+async function connectSerial() {
+  if (!('serial' in navigator)) {
+    alert('Web Serial API is supported in Google Chrome, Microsoft Edge, and Chromium-based browsers.\nTo connect a physical STM32 or ESP32 development board, open this dashboard in Chrome/Edge.');
+    return;
+  }
+  try {
+    serialPort = await navigator.serial.requestPort();
+    await serialPort.open({ baudRate: 115200 });
+
+    isHardwareConnected = true;
+    btnSerialConnect.classList.add('connected');
+    serialBtnText.textContent = 'DISCONNECT HIL';
+    simStatusPill.className = 'status-pill active';
+    simStatusText.textContent = 'HIL HARDWARE CONNECTED (115.2 kbps)';
+
+    readSerialStream();
+  } catch (err) {
+    console.warn('Serial connection cancelled or failed:', err);
+  }
+}
+
+async function disconnectSerial() {
+  try {
+    if (serialReader) {
+      await serialReader.cancel();
+      serialReader = null;
+    }
+    if (serialPort) {
+      await serialPort.close();
+      serialPort = null;
+    }
+  } catch (err) {
+    console.warn('Disconnect error:', err);
+  }
+  isHardwareConnected = false;
+  btnSerialConnect.classList.remove('connected');
+  serialBtnText.textContent = 'CONNECT USB HIL BENCH';
+  simStatusText.textContent = 'SIL SIMULATION MODE ACTIVE';
+}
+
+async function readSerialStream() {
+  const textDecoder = new TextDecoderStream();
+  serialPort.readable.pipeTo(textDecoder.writable);
+  const reader = textDecoder.readable.getReader();
+  serialReader = reader;
+
+  let buffer = '';
+  try {
+    while (isHardwareConnected) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (value) {
+        buffer += value;
+        const lines = buffer.split('\r\n');
+        buffer = lines.pop();
+        for (const line of lines) {
+          parseHardwareTelemetry(line.trim());
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Read stream error:', err);
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+function parseHardwareTelemetry(line) {
+  if (!line || !line.startsWith('{')) return;
+  try {
+    const data = JSON.parse(line);
+    if (data.angle !== undefined) {
+      state.steeringAngle = data.angle;
+      steeringSlider.value = data.angle;
+      sliderAngleVal.textContent = `${data.angle.toFixed(1)}°`;
+    }
+    if (data.vel !== undefined) state.steeringVelocity = data.vel;
+    if (data.net_t !== undefined) state.netTorque = data.net_t;
+    if (data.bar_t !== undefined) state.barrierTorque = data.bar_t;
+    if (data.sp_t !== undefined) state.springTorque = data.sp_t;
+    if (data.drv_t !== undefined) state.humanTorque = data.drv_t;
+    if (data.ovr !== undefined) state.isOverrideActive = (data.ovr === 1);
+  } catch (e) {
+    // Ignore frame parsing glitches
+  }
+}
