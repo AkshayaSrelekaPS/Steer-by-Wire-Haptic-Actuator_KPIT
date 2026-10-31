@@ -18,3 +18,7 @@ bin/
 
 # Extracted artifacts
 extracted_images/
+
+# Local submission video (do not push to git)
+demo_video.mp4
+*.mp4

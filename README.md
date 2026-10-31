@@ -70,27 +70,56 @@ This repository implements an **automotive-grade Force-Feedback Steering Actuato
 
 ## 📐 Mathematical Formulation
 
-The deterministic $1\text{ kHz}$ control loop computes the commanded motor torque:
+The deterministic $1\text{ kHz}$ control loop calculates the commanded motor torque ($\tau_{\text{motor}}$):
 
-$$\tau_{\text{motor}} = \tau_{\text{centering}} + \tau_{\text{damping}} + \tau_{\text{barrier}} + \tau_{\text{haptic\_vibe}}$$
+```math
+\tau_{\text{motor}} = \tau_{\text{centering}} + \tau_{\text{damping}} + \tau_{\text{barrier}} + \tau_{\text{haptic\_vibe}}
+```
+
+---
 
 ### 1. Spring-Damper Road Impedance
-$$\tau_{\text{centering}} = -K_p(v_{\text{veh}}) \cdot \theta, \quad \tau_{\text{damping}} = -B_d(v_{\text{veh}}) \cdot \omega$$
-*At parking speeds ($10\text{ km/h}$), the wheel is light and compliant. At highway speeds ($120\text{ km/h}$), damping scales up to ensure stability.*
+
+```math
+\tau_{\text{centering}} = -K_p(v_{\text{veh}}) \cdot \theta
+```
+
+```math
+\tau_{\text{damping}} = -B_d(v_{\text{veh}}) \cdot \omega
+```
+
+- **$\theta$:** Steering angle from center ($^\circ$ or $\text{rad}$)
+- **$\omega = \frac{d\theta}{dt}$:** Angular velocity ($\text{rad/s}$)
+- **Speed-Scaling:** At parking speeds ($10\text{ km/h}$), centering stiffness is low ($K_p \approx 0.02\text{ Nm/deg}$) for effortless maneuvering. At highway speeds ($120\text{ km/h}$), damping scales up ($B_d \approx 0.011\text{ Nm}\cdot\text{s/deg}$) to prevent over-steering and stabilize high-speed cruising.
+
+---
 
 ### 2. Three-Zone Progressive Haptic Barrier
-$$\tau_{\text{barrier}}(\theta, \omega) = 
+
+To prevent turning into blind-spot obstacles while complying with automotive safety standards, the steering field is segmented into three continuous angular zones:
+
+```math
+\tau_{\text{barrier}}(\theta, \omega) = 
 \begin{cases} 
-0 & \text{if } \theta < \theta_{\text{warn}} \quad \text{(Compliant Zone)} \\
--\min\left(\tau_{\text{clamp}}, \; K_1 \cdot \left(\frac{\theta - \theta_{\text{warn}}}{\theta_{\text{limit}} - \theta_{\text{warn}}}\right)^2\right) & \text{if } \theta_{\text{warn}} \le \theta < \theta_{\text{limit}} \quad \text{(Soft-Margin Warning)} \\
--\min\left(\tau_{\text{clamp}}, \; K_1 + K_2 \cdot (\theta - \theta_{\text{limit}}) + B_{\text{wall}} \cdot \max(0, \omega)\right) & \text{if } \theta \ge \theta_{\text{limit}} \quad \text{(High-Impedance Wall)}
-\end{cases}$$
+0, & \text{if } |\theta| < \theta_{\text{warn}} \quad \text{[Zone 1: Compliant Free Zone]} \\
+-\operatorname{sgn}(\theta) \cdot \min\left(\tau_{\text{clamp}}, \; K_1 \cdot \left(\frac{|\theta| - \theta_{\text{warn}}}{\theta_{\text{limit}} - \theta_{\text{warn}}}\right)^2\right), & \text{if } \theta_{\text{warn}} \le |\theta| < \theta_{\text{limit}} \quad \text{[Zone 2: Soft Margin Warning]} \\
+-\operatorname{sgn}(\theta) \cdot \min\left(\tau_{\text{clamp}}, \; K_1 + K_2 \cdot (|\theta| - \theta_{\text{limit}}) + B_{\text{wall}} \cdot \max(0, \omega \cdot \operatorname{sgn}(\theta))\right), & \text{if } |\theta| \ge \theta_{\text{limit}} \quad \text{[Zone 3: High-Impedance Barrier]}
+\end{cases}
+```
 
-*Note: The one-way damping term $B_{\text{wall}} \cdot \max(0, \omega)$ only resists movement pushing deeper into danger ($\omega > 0$). Steering back toward safety ($\omega < 0$) experiences zero barrier resistance.*
+> **Asymmetric One-Way Damping Note:**  
+> The velocity damping term $B_{\text{wall}} \cdot \max(0, \omega \cdot \operatorname{sgn}(\theta))$ only resists motion pushing **deeper** into danger ($\omega > 0$). When the driver steers **back toward center/safety** ($\omega < 0$), barrier resistance immediately drops to zero, ensuring natural, effortless recovery.
 
-### 3. Human Override & Functional Safety
-- **Ergonomic Safety Clamp:** $\tau_{\text{clamp}} \approx 4.5\text{–}6.0\text{ Nm}$ (prevents motor stall burnouts and wrist injury).
-- **Deliberate Override Detection:** If measured driver torque $\tau_{\text{human}} > 8.0\text{ Nm}$ for $\Delta t > 150\text{ ms}$, $\tau_{\text{barrier}}$ smoothly decays to $0$ to allow manual evasive maneuvers (UN R79 compliance).
+---
+
+### 3. Human Override & Functional Safety (UN R79 / ISO 26262)
+
+```math
+\text{If } |\tau_{\text{human}}| > \tau_{\text{override}} \; (8.0\text{ Nm}) \quad \text{for } \Delta t > 150\text{ ms} \implies \tau_{\text{barrier}} \xrightarrow{\text{decay}} 0
+```
+
+- **Ergonomic Safety Clamp:** Motor output is hardware-clamped to $\tau_{\text{clamp}} \le 5.5\text{ Nm}$ (preventing actuator stall current spikes, motor thermal burnout, and driver wrist strain).
+- **Driver Override Mandate (UN R79 / ISO 11270):** If an onboard sensor produces a false positive, the driver can deliberately overpower the system ($> 8.0\text{ Nm}$). The controller detects sustained human effort via the inline strain gauge, immediately decays the barrier, and yields full steering authority back to the driver.
 
 ---
 
