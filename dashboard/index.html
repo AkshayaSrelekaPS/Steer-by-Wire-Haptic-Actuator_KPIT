@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KPIT Steer-by-Wire Haptic Telemetry & Digital Twin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- TOP HEADER -->
+    <header class="top-nav">
+      <div class="brand">
+        <div class="logo-badge">KPIT</div>
+        <div class="brand-text">
+          <h1>STEER-BY-WIRE HAPTIC ACTUATOR</h1>
+          <span class="sub-title">Automotive Chassis Domain Controller • ISO 26262 & UN R79 SIL Telemetry</span>
+        </div>
+      </div>
+      <div class="header-badges">
+        <div class="status-pill active" id="simStatusPill">
+          <span class="pulse-dot"></span>
+          <span id="simStatusText">SIL SIMULATION MODE ACTIVE</span>
+        </div>
+        <div class="clock-display" id="systemClock">00:00:00.000</div>
+        <div class="bus-badge">CAN-FD: 500 kbps</div>
+      </div>
+    </header>
+
+    <!-- MAIN GRID LAYOUT -->
+    <main class="dashboard-grid">
+
+      <!-- LEFT COLUMN: CONTROL & STEERING WHEEL TWIN -->
+      <section class="card steering-card">
+        <div class="card-header">
+          <h2>STEERING HMI DIGITAL TWIN</h2>
+          <span class="tag">REAL-TIME ANGLE & FORCE</span>
+        </div>
+
+        <div class="wheel-interactive-container">
+          <!-- SVG STEERING WHEEL WITH DYNAMIC ROTATION -->
+          <div class="steering-wheel-wrapper" id="wheelWrapper">
+            <svg id="steeringWheelSvg" viewBox="0 0 300 300" width="240" height="240">
+              <!-- Outer Rim Glow -->
+              <circle cx="150" cy="150" r="135" class="wheel-glow"/>
+              <!-- Outer Rim Outer -->
+              <circle cx="150" cy="150" r="135" class="wheel-rim-outer"/>
+              <!-- Outer Rim Inner -->
+              <circle cx="150" cy="150" r="105" class="wheel-rim-inner"/>
+              <!-- Center Hub -->
+              <circle cx="150" cy="150" r="45" class="wheel-hub"/>
+              <circle cx="150" cy="150" r="38" class="wheel-hub-inner"/>
+              <text x="150" y="155" text-anchor="middle" class="hub-text">KPIT SbW</text>
+              <!-- 12 O'Clock Top Marker Strip -->
+              <rect x="144" y="15" width="12" height="22" rx="4" class="top-marker"/>
+              <!-- Left Spoke -->
+              <rect x="25" y="142" width="85" height="18" rx="6" class="wheel-spoke"/>
+              <!-- Right Spoke -->
+              <rect x="190" y="142" width="85" height="18" rx="6" class="wheel-spoke"/>
+              <!-- Bottom Spoke -->
+              <rect x="141" y="190" width="18" height="65" rx="6" class="wheel-spoke"/>
+              <!-- Virtual Barrier Indicator Arc Left -->
+              <path id="leftBarrierArc" class="barrier-arc left" d="M 150,15 A 135,135 0 0,0 20,110"/>
+              <!-- Virtual Barrier Indicator Arc Right -->
+              <path id="rightBarrierArc" class="barrier-arc right" d="M 150,15 A 135,135 0 0,1 280,110"/>
+            </svg>
+            <div class="wheel-center-overlay">
+              <span class="angle-val" id="angleDisplay">0.0°</span>
+              <span class="angle-lbl">STEERING ANGLE (θ)</span>
+            </div>
+          </div>
+
+          <!-- SLIDER TO INTERACTIVELY TURN THE WHEEL IN DEMO -->
+          <div class="control-strip">
+            <div class="slider-header">
+              <span>MANUAL STEERING INPUT (DEMO ROTATION)</span>
+              <span id="sliderAngleVal">0°</span>
+            </div>
+            <input type="range" id="steeringInputSlider" min="-90" max="90" value="0" step="0.5">
+            <div class="slider-ticks">
+              <span>-90° (Full Left)</span>
+              <span>-45°</span>
+              <span class="tick-center">0° (Center)</span>
+              <span>+45°</span>
+              <span>+90° (Full Right)</span>
+            </div>
+          </div>
+
+          <!-- APPLIED HUMAN TORQUE SLIDER -->
+          <div class="control-strip secondary">
+            <div class="slider-header">
+              <span>SIMULATED DRIVER APPLIED TORQUE (HUMAN EFFORT)</span>
+              <span id="humanTorqueVal">0.0 Nm</span>
+            </div>
+            <input type="range" id="humanTorqueSlider" min="0" max="15" value="2.5" step="0.1">
+            <div class="slider-hints">
+              <span>Light Grip (0-3 Nm)</span>
+              <span>Firm Turn (3-7 Nm)</span>
+              <span class="danger-hint">Override Attempt (&gt;8.0 Nm)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- HMI STATUS BAR -->
+        <div class="hmi-status-grid">
+          <div class="hmi-stat-box">
+            <span class="stat-lbl">CENTRAL SPRING TORQUE</span>
+            <span class="stat-val" id="springTorqueDisplay">0.00 Nm</span>
+          </div>
+          <div class="hmi-stat-box">
+            <span class="stat-lbl">BARRIER COUNTER-TORQUE</span>
+            <span class="stat-val" id="barrierTorqueDisplay">0.00 Nm</span>
+          </div>
+          <div class="hmi-stat-box highlight">
+            <span class="stat-lbl">NET MOTOR TORQUE (τ_cmd)</span>
+            <span class="stat-val" id="netTorqueDisplay">0.00 Nm</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- CENTER COLUMN: ADAS ROAD SIMULATOR & SAFETY STATE -->
+      <section class="card adas-card">
+        <div class="card-header">
+          <h2>ADAS SCENARIO & HAZARD REJECTION ENGINE</h2>
+          <span class="tag alert" id="hazardStatusBadge">PATH CLEAR</span>
+        </div>
+
+        <!-- ROAD SURFACE VISUALIZER -->
+        <div class="road-visualizer-container">
+          <div class="road-surface" id="roadSurface">
+            <!-- Simulated Vehicle -->
+            <div class="ego-vehicle" id="egoVehicle">
+              <div class="car-body">
+                <div class="car-cockpit"></div>
+                <div class="car-light left"></div>
+                <div class="car-light right"></div>
+              </div>
+            </div>
+            <!-- Obstacle Left -->
+            <div class="road-hazard left-hazard" id="leftHazard">
+              <div class="hazard-icon">⚠️</div>
+              <span>BLIND SPOT OBJECT</span>
+            </div>
+            <!-- Obstacle Right -->
+            <div class="road-hazard right-hazard" id="rightHazard">
+              <div class="hazard-icon">⚠️</div>
+              <span>GUARDRAIL LIMIT</span>
+            </div>
+            <!-- Lane Markings -->
+            <div class="lane-divider"></div>
+          </div>
+        </div>
+
+        <!-- ADAS CONTROLS & SPEED SLIDER -->
+        <div class="adas-controls">
+          <div class="speed-control-box">
+            <div class="slider-header">
+              <span>SIMULATED VEHICLE SPEED (v_veh)</span>
+              <span class="speed-badge" id="speedDisplay">40 km/h</span>
+            </div>
+            <input type="range" id="vehicleSpeedSlider" min="0" max="160" value="40" step="5">
+            <div class="speed-modes">
+              <button class="btn-preset active" data-speed="10">PARKING (10 km/h)</button>
+              <button class="btn-preset" data-speed="50">URBAN (50 km/h)</button>
+              <button class="btn-preset" data-speed="120">HIGHWAY (120 km/h)</button>
+            </div>
+          </div>
+
+          <!-- SCENARIO INJECTION BUTTONS -->
+          <div class="scenario-buttons">
+            <span class="section-sub">HAZARD INJECTION PRESETS:</span>
+            <div class="btn-group">
+              <button class="btn-scenario" id="btnHazardLeft">INJECT LEFT HAZARD</button>
+              <button class="btn-scenario" id="btnHazardRight">INJECT RIGHT HAZARD</button>
+              <button class="btn-scenario" id="btnRumble">TRIGGER RUMBLE STRIP</button>
+              <button class="btn-scenario reset" id="btnResetScenario">CLEAR ALL HAZARDS</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SAFETY INTERLOCK & COMPLIANCE STATUS -->
+        <div class="compliance-banner" id="complianceBanner">
+          <div class="comp-icon">🛡️</div>
+          <div class="comp-details">
+            <span class="comp-title" id="compTitle">NORMAL OPERATIONAL MODE</span>
+            <span class="comp-desc" id="compDesc">Active compliance with ISO 26262 ASIL-D & UN R79. Driver retains full override authority.</span>
+          </div>
+          <div class="comp-badge" id="overrideBadge">OVERRIDE IDLE</div>
+        </div>
+      </section>
+
+      <!-- RIGHT COLUMN: CAN TELEMETRY & LIVE WAVEFORM PLOT -->
+      <section class="card telemetry-card">
+        <div class="card-header">
+          <h2>LIVE CAN TELEMETRY & TORQUE HARVEST</h2>
+          <span class="tag mono">CAN 2.0B / CAN-FD</span>
+        </div>
+
+        <!-- LIVE CHART CANVAS -->
+        <div class="chart-container">
+          <canvas id="telemetryChart"></canvas>
+        </div>
+
+        <!-- CAN MESSAGE BUS STREAM (SIMULATED CAN FRAMES) -->
+        <div class="can-bus-monitor">
+          <div class="can-header">
+            <span>CAN-ID</span>
+            <span>DLC</span>
+            <span>DATA PAYLOAD (HEX)</span>
+            <span>TRANSMIT INTERVAL</span>
+          </div>
+          <div class="can-log-stream" id="canLogStream">
+            <!-- Dynamically injected frames -->
+          </div>
+        </div>
+
+        <!-- POWER ELECTRONICS & MOTOR DIAGNOSTICS -->
+        <div class="diag-grid">
+          <div class="diag-item">
+            <span class="diag-lbl">H-BRIDGE CURRENT</span>
+            <span class="diag-val" id="diagCurrent">1.42 A</span>
+          </div>
+          <div class="diag-item">
+            <span class="diag-lbl">FET DIE TEMP (EST)</span>
+            <span class="diag-val" id="diagTemp">34.8 °C</span>
+          </div>
+          <div class="diag-item">
+            <span class="diag-lbl">LOOP JITTER (1 kHz)</span>
+            <span class="diag-val success" id="diagJitter">0.18 ms</span>
+          </div>
+          <div class="diag-item">
+            <span class="diag-lbl">PWM DUTY CYCLE</span>
+            <span class="diag-val" id="diagPwm">22.4 %</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="telemetry.js"></script>
+</body>
+</html>
