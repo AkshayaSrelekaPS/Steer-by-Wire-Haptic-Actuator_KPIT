@@ -3,6 +3,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Domain: Automotive E/E & Chassis](https://img.shields.io/badge/Domain-Automotive_Chassis_%26_Steer--by--Wire-brightgreen.svg)](#)
 [![Standards: ISO 26262 | UN R79](https://img.shields.io/badge/Compliance-ISO_26262_%7C_UN_R79-orange.svg)](#)
+[![Presentation: KPIT Sparkle Deck](https://img.shields.io/badge/Presentation-KPIT_SPARKLE_Deck.pdf-red.svg)](KPIT%20SPARKLE_TECHTONICS.pdf)
+[![CI Status](https://img.shields.io/badge/CI%2FCD-Automotive_Build_Passing-brightgreen.svg)](.github/workflows/ci.yml)
 
 > **Submission for KPIT Technologies Innovation Challenge / Hackathon**  
 > **Track:** In-Cabin Sensing, Driver Ergonomics & Cockpit Systems / Wearable Robotics & Simulation
@@ -164,6 +166,9 @@ $$
 .
 ├── README.md                          # Project documentation & overview
 ├── steer_by_wire_solution_doc.md      # Detailed engineering & mathematical solution doc
+├── KPIT SPARKLE_TECHTONICS.pdf        # Official KPIT Sparkle presentation deck
+├── backend/                           # Python REST API & Real-Time CAN Gateway Server
+│   └── telemetry_server.py            # Zero-dependency HTTP & Telemetry streaming gateway
 ├── dashboard/                         # HTML5/JS Web SIL & Live HIL Telemetry Cockpit
 │   ├── index.html                     # Cockpit layout with Web Serial connect
 │   ├── style.css                      # Cyberpunk automotive cockpit styles
@@ -190,6 +195,22 @@ $$
     ├── virtual_steering_model.py      # Python 2-DOF single-track bicycle model & simulation
     ├── impedance_response_plot.png    # Validated torque-angle profiles (parking vs highway)
     └── phase_portrait_override.png   # 150 ms driver panic override latency verification
+```
+
+---
+
+## ⚡ Quickstart: Launching the Telemetry Cockpit & Backend Gateway
+
+To launch the real-time telemetry dashboard with the background automotive CAN gateway server (no external dependencies required):
+
+```bash
+# 1. Start the Python Telemetry & CAN Gateway Server
+python backend/telemetry_server.py
+
+# 2. Open in your browser:
+# Cockpit Interface: http://localhost:8080
+# REST Telemetry API: http://localhost:8080/api/telemetry
+# System Health Status: http://localhost:8080/api/status
 ```
 
 ---
