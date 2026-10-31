@@ -83,7 +83,7 @@ Between **Idea 3 (Steer-by-Wire Force-Feedback Haptic Actuator)** and **Idea 4 (
 The microcontroller runs a deterministic $1\text{ kHz}$ control loop implementing an active human-in-the-loop admittance/impedance model. In compliance with automotive functional safety standards (ISO 26262 and UN R79 / ISO 11270 for lane-keeping haptic intervention), the system functions as an **assistive haptic intervention, not an absolute mechanical lock**, ensuring the driver always retains override authority.
 
 $$
-\tau_{\text{motor}} = \tau_{\text{centering}} + \tau_{\text{damping}} + \tau_{\text{barrier}} + \tau_{\text{haptic\_vibe}}
+\tau_{\text{motor}} = \tau_{\text{centering}} + \tau_{\text{damping}} + \tau_{\text{barrier}} + \tau_{\text{vibe}}
 $$
 
 #### 1. Self-Centering Spring Effect:

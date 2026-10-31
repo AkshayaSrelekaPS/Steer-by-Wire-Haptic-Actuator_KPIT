@@ -73,7 +73,7 @@ This repository implements an **automotive-grade Force-Feedback Steering Actuato
 The deterministic $1\text{ kHz}$ control loop calculates the commanded motor torque ($\tau_{\text{motor}}$):
 
 $$
-\tau_{\text{motor}} = \tau_{\text{centering}} + \tau_{\text{damping}} + \tau_{\text{barrier}} + \tau_{\text{haptic\_vibe}}
+\tau_{\text{motor}} = \tau_{\text{centering}} + \tau_{\text{damping}} + \tau_{\text{barrier}} + \tau_{\text{vibe}}
 $$
 
 ---
