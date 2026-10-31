@@ -180,6 +180,8 @@ $$
 │   └── bom.md                         # Detailed component sourcing & Sallen-Key filter specs
 ├── ansys/                             # Multi-Physics FEA Structural & Thermal Simulation
 │   ├── ansys_fea_thermal_report.md    # Complete ANSYS Mechanical & Icepak verification report
+│   ├── torsional_fea_model.mac        # Native ANSYS APDL static structural solver macro
+│   ├── thermal_icepak_setup.mac       # Native ANSYS APDL transient conjugate heat transfer macro
 │   ├── fea_torsional_stress_distribution.png # 20.5 Nm shock load stress & angular deflection
 │   └── thermal_transient_junction_temp.png   # MOSFET continuous stall junction temp (T_j)
 ├── safety/                            # Automotive Functional Safety

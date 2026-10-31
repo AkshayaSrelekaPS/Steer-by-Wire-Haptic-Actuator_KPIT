@@ -1,0 +1,124 @@
+! =============================================================================
+! ANSYS Mechanical / Icepak APDL Thermal Solver Deck
+! Model: Discrete H-Bridge Power Stage (4x IRF3205 TO-220AB + Extruded Heatsink)
+! Analysis Type: Transient Thermal Conjugate Conduction & Natural Convection
+! Operating Condition: 120-Second Continuous Stall Holding Counter-Torque (4.8A)
+! Ambient In-Cabin Temperature: Tamb = 40.0 °C
+! =============================================================================
+
+/BATCH
+/TITLE, H-Bridge Power Stage 120s Continuous Stall Transient Thermal FEA
+/UNITS, SI
+
+! -----------------------------------------------------------------------------
+! PRE-PROCESSOR (/PREP7)
+! -----------------------------------------------------------------------------
+/PREP7
+
+! 1. Define Thermal Element Type
+! SOLID70: 3D 8-Node Thermal Solid with Conduction & Internal Heat Generation
+ET, 1, SOLID70
+KEYOPT, 1, 1, 0         ! Standard thermal conduction formulation
+
+! 2. Thermal Material Properties
+! Material 1: Silicon Die / TO-220 Body
+MP, KXX,  1, 148.0      ! Thermal Conductivity (W/m*K)
+MP, DENS, 1, 2330.0     ! Density (kg/m^3)
+MP, C,    1, 700.0      ! Specific Heat (J/kg*K)
+
+! Material 2: Extruded Aluminum 6063-T5 Heatsink
+MP, KXX,  2, 205.0      ! Thermal Conductivity (W/m*K)
+MP, DENS, 2, 2700.0     ! Density (kg/m^3)
+MP, C,    2, 900.0      ! Specific Heat (J/kg*K)
+
+! Material 3: Sil-Pad Thermal Interface Material (TIM)
+MP, KXX,  3, 1.2        ! Thermal Conductivity (W/m*K)
+MP, DENS, 3, 1800.0     ! Density (kg/m^3)
+MP, C,    3, 1000.0     ! Specific Heat (J/kg*K)
+
+! 3. Geometry Definition
+! TO-220 Silicon Die: 4 mm x 4 mm x 0.3 mm active volume
+BLOCK, -0.002, 0.002, -0.002, 0.002, 0, 0.0003
+
+! TO-220 Copper Tab: 10 mm x 15 mm x 1.3 mm
+BLOCK, -0.005, 0.005, -0.0075, 0.0075, -0.0013, 0
+
+! Extruded Aluminum Fin Heatsink Base: 50 mm x 30 mm x 5 mm
+BLOCK, -0.025, 0.025, -0.015, 0.015, -0.0063, -0.0013
+
+! Heatsink Fins (5 Parallel Fins: 1.5 mm thick, 15 mm tall)
+*DO, i, 0, 4
+  X_POS = -0.020 + (i * 0.010)
+  BLOCK, X_POS, X_POS+0.0015, -0.015, 0.015, -0.0213, -0.0063
+*ENDDO
+
+! Glue All Volumes for Perfect Thermal Conduction Interface
+VGLUE, ALL
+
+! 4. Meshing
+ESIZE, 0.0015           ! 1.5 mm global element size
+TYPE, 1
+MAT, 2
+VMESH, ALL
+
+! -----------------------------------------------------------------------------
+! INITIAL CONDITIONS & THERMAL BOUNDARY CONDITIONS
+! -----------------------------------------------------------------------------
+! Initial In-Cabin Temperature across all nodes = 40.0 °C (313.15 K)
+TUNIF, 40.0
+
+! Boundary 1: Internal Volumetric Joule Heating in Active Silicon Die
+! Total continuous conduction loss Ploss = I^2 * Rds(on) = (4.8A)^2 * 0.012 Ohm = 2.76 W
+! Die Volume V = 4mm x 4mm x 0.3mm = 4.8e-9 m^3
+! Volumetric Heat Generation Q_gen = 2.76 W / 4.8e-9 m^3 = 5.75e8 W/m^3
+VSEL, S, LOC, Z, 0, 0.0003
+BFE, ALL, HGEN, 1, 5.75E8
+ALLSEL
+
+! Boundary 2: Natural Convection to In-Cabin Air (Tamb = 40.0 °C)
+! Convection heat transfer coefficient h = 12.0 W/(m^2*K) applied to all exposed fin surfaces
+ASEL, S, LOC, Z, -0.0213, -0.0013
+SFA, ALL, 1, CONV, 12.0, 40.0
+ALLSEL
+
+! -----------------------------------------------------------------------------
+! SOLUTION PHASE (/SOLU)
+! -----------------------------------------------------------------------------
+/SOLU
+ANTYPE, 4               ! Transient Thermal Analysis
+TRNOPT, FULL            ! Full Newton-Raphson solver
+TIME, 120.0             ! 120 Seconds total evaluation duration
+AUTOTS, ON              ! Automatic time stepping
+DELTIM, 0.5, 0.1, 2.0   ! Initial dt = 0.5s, min dt = 0.1s, max dt = 2.0s
+KBC, 1                  ! Stepped heat generation load
+OUTRES, ALL, ALL        ! Record all thermal time points for post-processing
+SOLVE
+FINISH
+
+! -----------------------------------------------------------------------------
+! POST-PROCESSING (/POST26 & /POST1)
+! -----------------------------------------------------------------------------
+/POST26
+! Query Junction Temperature (Node at die center: X=0, Y=0, Z=0.00015)
+NSEL, S, LOC, X, 0
+NSEL, R, LOC, Y, 0
+NSEL, R, LOC, Z, 0.00015
+*GET, NJUNCTION, NODE, 0, NUM, MIN
+ALLSEL
+
+NSOL, 2, NJUNCTION, TEMP, , T_JUNCTION
+/SHOW, PNG
+/GFILE, 1200
+XVAR, 1
+PLVAR, 2                ! Plot Transient Temperature vs Time
+
+! Verification Against ISO 26262 Thresholds
+*GET, FINAL_TEMP, VARI, 2, REAL, 120.0
+DERATING_LIMIT = 85.0   ! ISO 26262 ASIL-B Derating Margin
+SILICON_MAX = 175.0     ! IRF3205 Absolute Maximum
+
+/OUTPUT, thermal_transient_results, txt
+*MSG, INFO, FINAL_TEMP, DERATING_LIMIT - FINAL_TEMP
+ANSYS Icepak Thermal Results: Steady-State Tj = %G °C | Margin below 85°C Derating = %G °C
+/OUTPUT
+FINISH

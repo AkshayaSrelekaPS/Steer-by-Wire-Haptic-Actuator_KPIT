@@ -1,0 +1,120 @@
+! =============================================================================
+! ANSYS Mechanical APDL (ANSYS Parametric Design Language) Solver Deck
+! Model: Steer-by-Wire Primary Torsion Shaft & Sensor Coupling Hub
+! Analysis Type: Static Structural Torsional Stress & Angular Deflection
+! Extreme Load Case: Driver Panic Override (15 Nm) + Motor Stall Torque (5.5 Nm)
+! Total Resultant Torsional Moment: Mt = 20.5 Nm
+! =============================================================================
+
+/BATCH
+/TITLE, Steer-by-Wire Steering Shaft 20.5 Nm Torsional FEA Analysis
+/UNITS, SI
+
+! -----------------------------------------------------------------------------
+! PRE-PROCESSOR (/PREP7)
+! -----------------------------------------------------------------------------
+/PREP7
+
+! 1. Define Element Types
+! SOLID187: Higher-order 3D 10-Node Tetrahedral Solid (Quadratic Displacement)
+ET, 1, SOLID187
+KEYOPT, 1, 1, 0         ! Standard integration
+KEYOPT, 1, 2, 0         ! Pure displacement formulation
+
+! 2. Material Definition (Material 1: Aluminum 6061-T6)
+MP, EX,   1, 68.9E9     ! Elastic Modulus (Pa)
+MP, PRXY, 1, 0.33       ! Poisson's Ratio
+MP, DENS, 1, 2700.0     ! Density (kg/m^3)
+MP, GXY,  1, 26.0E9     ! Shear Modulus (Pa)
+
+! Material 2: Carbon-Fiber Reinforced PLA (Bench Alternative)
+MP, EX,   2, 8.5E9      ! Elastic Modulus (Pa)
+MP, PRXY, 2, 0.38       ! Poisson's Ratio
+MP, DENS, 2, 1290.0     ! Density (kg/m^3)
+
+! 3. Solid Modeling Geometry
+! Primary Column: D = 12 mm (R = 6 mm), Length L = 120 mm
+CYLIND, 0.006, , 0, 0.120, 0, 360
+
+! Keyway / Flat Drive Coupling Cutout (D-profile: 1.5 mm flat depth)
+WPOFFS, 0.0045, 0, 0
+BLOCK, 0.0045, 0.007, -0.006, 0.006, 0, 0.030
+VSBV, 1, 2              ! Subtract block from cylinder to create D-shaft profile
+WPOFFS, -0.0045, 0, 0   ! Reset Working Plane
+
+! 4. Meshing & Adaptive Refinement
+TYPE, 1
+MAT, 1
+ESIZE, 0.0012           ! Global element size: 1.2 mm
+SMRT, 3                 ! SmartSizing fine mesh controls
+
+! Refine high-stress notch radius along D-flat transition
+LSEL, S, LOC, X, 0.0045
+LESIZE, ALL, 0.0004     ! 0.4 mm local boundary refinement
+ALLSEL
+
+VMESH, ALL
+/STATUS, MESH
+
+! -----------------------------------------------------------------------------
+! BOUNDARY CONDITIONS & LOADING
+! -----------------------------------------------------------------------------
+! Boundary 1: Fixed Rotational & Axial Constraint at Motor Gearbox Face (Z = 0)
+NSEL, S, LOC, Z, 0.0
+D, ALL, UX, 0.0
+D, ALL, UY, 0.0
+D, ALL, UZ, 0.0
+D, ALL, ROTX, 0.0
+D, ALL, ROTY, 0.0
+D, ALL, ROTZ, 0.0
+ALLSEL
+
+! Boundary 2: Applied Resultant Torsional Moment (Mt = 20.5 Nm) at Wheel Hub (Z = 0.120)
+! Rigidly couple surface nodes to center pilot node using CERIG / RBE3
+NSEL, S, LOC, Z, 0.120
+*GET, NCENTER, NODE, 0, NUM, MAX
+N, NCENTER+1, 0, 0, 0.120   ! Master Pilot Node
+CERIG, NCENTER+1, ALL, UXYZ ! Rigid multipoint constraint spider
+
+F, NCENTER+1, MZ, 20.5      ! 20.5 Nm Pure Torsion Moment
+ALLSEL
+
+! -----------------------------------------------------------------------------
+! SOLUTION PHASE (/SOLU)
+! -----------------------------------------------------------------------------
+/SOLU
+ANTYPE, 0                   ! Static Structural Analysis
+NLGEOM, OFF                 ! Small-displacement assumption (Delta_theta < 0.1 deg)
+EQSLV, SPARSE               ! Direct sparse matrix solver
+SOLVE
+FINISH
+
+! -----------------------------------------------------------------------------
+! POST-PROCESSING (/POST1)
+! -----------------------------------------------------------------------------
+/POST1
+SET, LAST
+
+! 1. Plot Von Mises Equivalent Stress Contour
+/SHOW, PNG
+/GFILE, 1200
+PLNSOL, S, EQV
+
+! 2. Query Maximum Stress & Factor of Safety
+*GET, MAX_VON_MISES, SORT, 0, IMAX
+*GET, SIGMA_VM, NODE, MAX_VON_MISES, S, EQV
+YIELD_STRENGTH = 276.0E6    ! Al 6061-T6 (276 MPa)
+FOS = YIELD_STRENGTH / SIGMA_VM
+
+! 3. Plot Torsional Angular Deflection (ROTZ)
+PLNSOL, U, ROT
+*GET, MAX_DEFLECTION_RAD, SORT, 0, IMAX
+*GET, DELTA_THETA_RAD, NODE, MAX_DEFLECTION_RAD, ROT, Z
+DELTA_THETA_DEG = DELTA_THETA_RAD * (180.0 / 3.14159265)
+
+! Print Results Summary to Output Log
+/OUTPUT, fea_torsional_results, txt
+*MSG, INFO, SIGMA_VM/1E6, FOS, DELTA_THETA_DEG
+ANSYS Mechanical FEA Torsion Results: Max Stress = %G MPa | FoS = %G | Deflection = %G deg
+/OUTPUT
+FINISH

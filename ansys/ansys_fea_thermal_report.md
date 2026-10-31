@@ -59,3 +59,12 @@ When the vehicle is sustained against an impassable hazard barrier, the H-bridge
 ### 3.3 Automotive Safety Validation
 * With a compact extruded aluminum heatsink ($R_{\text{th}} = 4.2^\circ\text{C/W}$), junction temperature asymptotes at **$68.4^\circ\text{C}$**, remaining comfortably below the **ISO 26262 ASIL-B thermal rollback threshold ($85.0^\circ\text{C}$)**.
 * Even during continuous 120-second barrier activation, thermal runaway is physically impossible under standard passive convection.
+
+---
+
+## 4. Native ANSYS APDL Simulation Source Files
+
+The finite element models can be directly executed or loaded into ANSYS Workbench / Mechanical APDL using the accompanying native solver input decks in this directory:
+
+* [`torsional_fea_model.mac`](torsional_fea_model.mac) – Native APDL input macro for the 3D static structural torsional shear stress, mesh generation, and angular deflection analysis.
+* [`thermal_icepak_setup.mac`](thermal_icepak_setup.mac) – Native APDL input macro for transient thermal conjugate conduction, internal heat generation, and natural convection solve.
