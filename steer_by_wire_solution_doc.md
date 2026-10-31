@@ -102,15 +102,29 @@ The microcontroller runs a deterministic $1\text{ kHz}$ control loop implementin
 Rather than a late step-barrier after the vehicle enters danger, a **three-zone progressive repulsive field** is established:
 
 ```math
-\tau_{\text{barrier}}(\theta, \omega) = 
-\begin{cases} 
-0, & \text{if } |\theta| < \theta_{\text{warn}} \quad \text{[Zone 1: Compliant Zone]} \\
--\operatorname{sgn}(\theta) \cdot \min\left(\tau_{\text{clamp}}, \; K_1 \cdot \left(\frac{|\theta| - \theta_{\text{warn}}}{\theta_{\text{limit}} - \theta_{\text{warn}}}\right)^2\right), & \text{if } \theta_{\text{warn}} \le |\theta| < \theta_{\text{limit}} \quad \text{[Zone 2: Soft Margin]} \\
--\operatorname{sgn}(\theta) \cdot \min\left(\tau_{\text{clamp}}, \; K_1 + K_2 \cdot (|\theta| - \theta_{\text{limit}}) + B_{\text{wall}} \cdot \max(0, \omega \cdot \operatorname{sgn}(\theta))\right), & \text{if } |\theta| \ge \theta_{\text{limit}} \quad \text{[Zone 3: High-Impedance]}
-\end{cases}
+\tau_{\text{barrier}}(\theta, \omega) = \tau_{\text{zone}}(\theta) + \tau_{\text{damping}}(\omega)
 ```
 
-*Note: The one-way damping term $B_{\text{wall}} \cdot \max(0, \omega \cdot \operatorname{sgn}(\theta))$ only resists movement **deeper** into danger ($\omega > 0$). As soon as the driver steers back toward safety ($\omega < 0$), barrier resistance drops to zero, encouraging natural corrective recovery.*
+* **Zone 1: Free Compliant Zone** ($|\theta| < \theta_{\text{warn}}$):
+  ```math
+  \tau_{\text{barrier}} = 0
+  ```
+  *(Normal steering feel; zero artificial interference).*
+
+* **Zone 2: Progressive Soft-Margin Resistance** ($\theta_{\text{warn}} \le |\theta| < \theta_{\text{limit}}$):
+  ```math
+  \tau_{\text{barrier}} = -K_1 \cdot \left(\frac{|\theta| - \theta_{\text{warn}}}{\theta_{\text{limit}} - \theta_{\text{warn}}}\right)^2 \cdot \operatorname{sgn}(\theta)
+  ```
+  *(A parabolic stiffness gradient ramps up counter-torque before crossing the unsafe boundary).*
+
+* **Zone 3: High-Impedance Dissipative Barrier** ($|\theta| \ge \theta_{\text{limit}}$):
+  ```math
+  \tau_{\text{barrier}} = -\min\Big(\tau_{\text{clamp}}, \; K_1 + K_2 \cdot (|\theta| - \theta_{\text{limit}}) + B_{\text{wall}} \cdot \max(0, \omega \cdot \operatorname{sgn}(\theta))\Big) \cdot \operatorname{sgn}(\theta)
+  ```
+  *(Imposes an assistive torque plateau combined with asymmetric one-way velocity damping).*
+
+> **💡 Asymmetric One-Way Damping ($\max(0, \omega)$):**  
+> Damping only opposes motion moving **deeper** into danger ($\omega > 0$). As soon as the driver steers back toward safety ($\omega < 0$), barrier resistance drops to zero, encouraging natural corrective recovery.
 
 #### 4. Driver Intentional Override & Clamping Protocol (UN R79 / ISO 26262 Compliance):
 ```math

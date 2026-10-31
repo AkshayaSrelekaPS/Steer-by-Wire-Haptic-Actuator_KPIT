@@ -96,19 +96,34 @@ The deterministic $1\text{ kHz}$ control loop calculates the commanded motor tor
 
 ### 2. Three-Zone Progressive Haptic Barrier
 
-To prevent turning into blind-spot obstacles while complying with automotive safety standards, the steering field is segmented into three continuous angular zones:
+To prevent steering into blind-spot obstacles while complying with automotive safety standards, the steering field is segmented into three continuous angular zones:
 
 ```math
-\tau_{\text{barrier}}(\theta, \omega) = 
-\begin{cases} 
-0, & \text{if } |\theta| < \theta_{\text{warn}} \quad \text{[Zone 1: Compliant Free Zone]} \\
--\operatorname{sgn}(\theta) \cdot \min\left(\tau_{\text{clamp}}, \; K_1 \cdot \left(\frac{|\theta| - \theta_{\text{warn}}}{\theta_{\text{limit}} - \theta_{\text{warn}}}\right)^2\right), & \text{if } \theta_{\text{warn}} \le |\theta| < \theta_{\text{limit}} \quad \text{[Zone 2: Soft Margin Warning]} \\
--\operatorname{sgn}(\theta) \cdot \min\left(\tau_{\text{clamp}}, \; K_1 + K_2 \cdot (|\theta| - \theta_{\text{limit}}) + B_{\text{wall}} \cdot \max(0, \omega \cdot \operatorname{sgn}(\theta))\right), & \text{if } |\theta| \ge \theta_{\text{limit}} \quad \text{[Zone 3: High-Impedance Barrier]}
-\end{cases}
+\tau_{\text{barrier}}(\theta, \omega) = \tau_{\text{zone}}(\theta) + \tau_{\text{damping}}(\omega)
 ```
 
-> **Asymmetric One-Way Damping Note:**  
-> The velocity damping term $B_{\text{wall}} \cdot \max(0, \omega \cdot \operatorname{sgn}(\theta))$ only resists motion pushing **deeper** into danger ($\omega > 0$). When the driver steers **back toward center/safety** ($\omega < 0$), barrier resistance immediately drops to zero, ensuring natural, effortless recovery.
+#### Zone Breakdown:
+
+1. **Zone 1: Free Compliant Zone** ($|\theta| < \theta_{\text{warn}}$)
+   ```math
+   \tau_{\text{barrier}} = 0
+   ```
+   *No artificial interference; normal steering feel.*
+
+2. **Zone 2: Progressive Soft-Margin Warning** ($\theta_{\text{warn}} \le |\theta| < \theta_{\text{limit}}$)
+   ```math
+   \tau_{\text{barrier}} = -K_1 \cdot \left(\frac{|\theta| - \theta_{\text{warn}}}{\theta_{\text{limit}} - \theta_{\text{warn}}}\right)^2 \cdot \operatorname{sgn}(\theta)
+   ```
+   *A parabolic repulsive potential field creates smooth, escalating stiffness before crossing the lane hazard.*
+
+3. **Zone 3: High-Impedance Dissipative Barrier** ($|\theta| \ge \theta_{\text{limit}}$)
+   ```math
+   \tau_{\text{barrier}} = -\min\Big(\tau_{\text{clamp}}, \; K_1 + K_2 \cdot (|\theta| - \theta_{\text{limit}}) + B_{\text{wall}} \cdot \max(0, \omega \cdot \operatorname{sgn}(\theta))\Big) \cdot \operatorname{sgn}(\theta)
+   ```
+   *Maximum assistive torque combined with asymmetric one-way velocity damping.*
+
+> **💡 Asymmetric One-Way Damping ($\max(0, \omega)$):**  
+> Damping only opposes motion moving **deeper** into the hazard ($\omega > 0$). When steering **back toward safety** ($\omega < 0$), barrier resistance immediately drops to zero, ensuring an effortless, natural recovery.
 
 ---
 
