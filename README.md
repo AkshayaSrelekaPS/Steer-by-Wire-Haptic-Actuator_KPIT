@@ -4,10 +4,12 @@
 [![Domain: Automotive E/E & Chassis](https://img.shields.io/badge/Domain-Automotive_Chassis_%26_Steer--by--Wire-brightgreen.svg)](#)
 [![Standards: ISO 26262 | UN R79](https://img.shields.io/badge/Compliance-ISO_26262_%7C_UN_R79-orange.svg)](#)
 [![Presentation: KPIT Sparkle Deck](https://img.shields.io/badge/Presentation-KPIT_SPARKLE_Deck.pdf-red.svg)](KPIT%20SPARKLE_TECHTONICS.pdf)
-[![CI Status](https://img.shields.io/badge/CI%2FCD-Automotive_Build_Passing-brightgreen.svg)](.github/workflows/ci.yml)
+[![Automotive E/E CI Pipeline](https://github.com/AkshayaSrelekaPS/Steer-by-Wire-Haptic-Actuator_KPIT/actions/workflows/ci.yml/badge.svg)](https://github.com/AkshayaSrelekaPS/Steer-by-Wire-Haptic-Actuator_KPIT/actions/workflows/ci.yml)
 
-> **Submission for KPIT Technologies Innovation Challenge / Hackathon**  
-> **Track:** In-Cabin Sensing, Driver Ergonomics & Cockpit Systems / Wearable Robotics & Simulation
+> **Submission for KPIT SPARKLE 2027**  
+> **Theme:** Wearable Robotics & Smart Cockpit Ergonomics  
+> **Team:** TECHTONICS (Akshaya Sreleka P S, Ashwinkumar K, Dhamarai Kannan A, Dharshan S)  
+> **Institution:** Chennai Institute of Technology (CIT Chennai)
 
 ---
 
@@ -22,6 +24,19 @@ This repository implements an **automotive-grade Force-Feedback Steering Actuato
 - **Progressive Soft-Margin Repulsive Potential Field:** Warns the driver with escalating counter-torque *before* an unsafe lane boundary is crossed.
 - **Functional Safety & Driver Override Protocol (ISO 26262 & UN R79 / ISO 11270):** Ergonomically clamped torque ceiling ($\approx 5\text{ Nm}$) with real-time panic override detection ($> 8\text{ Nm}$) to ensure the human driver always retains ultimate control.
 - **Hardware-Level Sensor Integration & CAN Telemetry:** 12-bit magnetic rotary encoding, analog reaction torque strain-gauge amplification, and cyclic automotive CAN bus broadcasting.
+
+---
+
+## 📚 Core Engineering Dossiers & Documentation
+
+| Engineering Subsystem | Documentation & Source Links | Verification Artifacts |
+| :--- | :--- | :--- |
+| **Mechanical & Thermal FEA** | [`ansys/ansys_fea_thermal_report.md`](ansys/ansys_fea_thermal_report.md) | Native APDL Macros: [`torsional_fea_model.mac`](ansys/torsional_fea_model.mac), [`thermal_icepak_setup.mac`](ansys/thermal_icepak_setup.mac) |
+| **Functional Safety (ASIL-D)** | [`safety/iso26262_safety_case.md`](safety/iso26262_safety_case.md) | HARA Matrix (`HZ-01` to `HZ-04`), Safety Goals (`SG-1` to `SG-4`), TSRs |
+| **ECE Circuit & Hardware** | [`hardware/circuit_schematic.md`](hardware/circuit_schematic.md), [`hardware/bom.md`](hardware/bom.md) | Full H-Bridge Schematics, Sallen-Key 150 Hz Filter, MCU Pinouts |
+| **Chassis Dynamics & Plant** | [`simulation/virtual_steering_model.py`](simulation/virtual_steering_model.py) | 2-DOF Bicycle Model Plots: [Torque Curve](simulation/impedance_response_plot.png), [Override Delay](simulation/phase_portrait_override.png) |
+| **Embedded C++ Firmware** | [`firmware/`](firmware/) | 1 kHz Deterministic Loop, AS5600 I2C Driver, CAN-FD Framing (`0x102`, `0x104`, `0x350`) |
+| **Presentation Deck** | [`KPIT SPARKLE_TECHTONICS.pdf`](KPIT%20SPARKLE_TECHTONICS.pdf) | Official 10-Slide Competition Presentation Deck |
 
 ---
 
