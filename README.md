@@ -182,6 +182,7 @@ $$
 │   │   └── sensor_drivers/            # AS5600 12-bit I2C encoder driver
 │   └── include/                       # Header interfaces
 ├── hardware/                          # Schematics & Circuit Designs
+│   ├── circuit_schematic.md           # H-Bridge, AFE, Sallen-Key filter & MCU pinout schematics
 │   └── bom.md                         # Detailed component sourcing & Sallen-Key filter specs
 ├── ansys/                             # Multi-Physics FEA Structural & Thermal Simulation
 │   ├── ansys_fea_thermal_report.md    # Complete ANSYS Mechanical & Icepak verification report

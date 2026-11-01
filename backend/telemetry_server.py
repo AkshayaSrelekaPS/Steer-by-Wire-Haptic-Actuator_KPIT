@@ -3,7 +3,7 @@
 KPIT Steer-by-Wire Telemetry & Automotive CAN Gateway Backend Server
 Provides:
 1. Static HTTP Web Server for HTML5 Cockpit Dashboard (http://localhost:8080)
-2. REST API & Telemetry Harvest Engine (/api/status, /api/telemetry, /api/hazard)
+2. REST API & Telemetry Harvest Engine (/api/status, /api/telemetry, /api/hazard, /api/telemetry_sync)
 3. Simulated or Hardware Serial/CAN Gateway (UART/SocketCAN Bridge)
 Zero third-party dependencies required (Runs out-of-the-box on pure Python standard library).
 """
@@ -57,11 +57,11 @@ def background_can_gateway():
     while True:
         with state_lock:
             tick += 1
-            # Synthesize periodic CAN frame
+            # Synthesize periodic CAN frame using latest synchronized physical state
             target = CAN_ID_LIST[tick % len(CAN_ID_LIST)]
             hex_angle = f"{int((telemetry_state['steering_angle'] + 90) * 100) & 0xFFFF:04X}"
             hex_torque = f"{int((telemetry_state['net_torque'] + 10) * 100) & 0xFFFF:04X}"
-            hex_hazard = "01" if telemetry_state['left_hazard'] else ("02" if telemetry_state['right_hazard'] else "00")
+            hex_hazard = ("01" if telemetry_state['left_hazard'] else "00") + ("02" if telemetry_state['right_hazard'] else "00")
             hex_override = "01" if telemetry_state['is_override_active'] else "00"
             payload = f"{hex_angle} {hex_torque} {hex_hazard} {hex_override} FF AA"
 
@@ -86,6 +86,13 @@ class TelemetryRequestHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=DASHBOARD_DIR, **kwargs)
 
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+
     def do_GET(self):
         parsed = urlparse(self.path)
         if parsed.path == '/api/status':
@@ -107,9 +114,30 @@ class TelemetryRequestHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
-        if parsed.path == '/api/hazard':
-            content_length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(content_length)
+        content_length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(content_length)
+
+        if parsed.path == '/api/telemetry_sync':
+            try:
+                data = json.loads(body.decode('utf-8'))
+                with state_lock:
+                    for key in ['steering_angle', 'steering_velocity', 'driver_torque',
+                                'vehicle_speed', 'spring_torque', 'damping_torque',
+                                'barrier_torque', 'net_torque', 'is_override_active',
+                                'left_hazard', 'right_hazard', 'rumble_active']:
+                        if key in data:
+                            telemetry_state[key] = data[key]
+                    
+                    # Power stage load update
+                    abs_torque = abs(telemetry_state['net_torque'])
+                    telemetry_state['motor_current'] = round(abs_torque * 0.95 + 0.35, 2)
+                    telemetry_state['fet_temp'] = round(32.0 + telemetry_state['motor_current'] * 2.8, 1)
+
+                self._send_json({"status": "SUCCESS", "message": "Telemetry synchronized"})
+            except Exception as e:
+                self._send_json({"status": "ERROR", "message": str(e)}, status=400)
+
+        elif parsed.path == '/api/hazard':
             try:
                 data = json.loads(body.decode('utf-8'))
                 with state_lock:
@@ -147,6 +175,7 @@ def main():
     print("=" * 70)
     print(f"  [+] Static Dashboard Served: {DASHBOARD_DIR}")
     print(f"  [+] REST Telemetry API:      http://localhost:{PORT}/api/telemetry")
+    print(f"  [+] Telemetry Sync Endpoint: http://localhost:{PORT}/api/telemetry_sync")
     print(f"  [+] System Health Status:    http://localhost:{PORT}/api/status")
     print(f"  [+] Live Web Twin UI:        http://localhost:{PORT}/index.html")
     print("=" * 70)

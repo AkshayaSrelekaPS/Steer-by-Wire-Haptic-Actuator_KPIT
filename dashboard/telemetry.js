@@ -511,3 +511,55 @@ function parseHardwareTelemetry(line) {
     // Ignore frame parsing glitches
   }
 }
+
+
+// ============================================================================
+// AUTOMATIC BACKEND REST & CAN GATEWAY SYNCHRONIZATION
+// ============================================================================
+let isBackendConnected = false;
+
+async function checkBackendConnection() {
+  if (!window.location.protocol.startsWith('http')) return;
+  try {
+    const res = await fetch('/api/status');
+    if (res.ok) {
+      isBackendConnected = true;
+      if (!isHardwareConnected) {
+        simStatusPill.className = 'status-pill active';
+        simStatusText.textContent = `CAN GATEWAY ACTIVE (PORT ${window.location.port || 8080})`;
+      }
+    }
+  } catch (e) {
+    isBackendConnected = false;
+  }
+}
+
+async function syncWithBackend() {
+  if (!isBackendConnected || isHardwareConnected) return;
+  try {
+    await fetch('/api/telemetry_sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        steering_angle: state.steeringAngle,
+        steering_velocity: state.steeringVelocity,
+        driver_torque: state.humanTorque,
+        vehicle_speed: state.vehicleSpeed,
+        spring_torque: state.springTorque,
+        damping_torque: state.dampingTorque,
+        barrier_torque: state.barrierTorque,
+        net_torque: state.netTorque,
+        is_override_active: state.isOverrideActive,
+        left_hazard: state.leftHazardActive,
+        right_hazard: state.rightHazardActive,
+        rumble_active: state.rumbleActive
+      })
+    });
+  } catch (e) {
+    // Graceful offline fallback
+  }
+}
+
+// Initial connection check and periodic 10 Hz telemetry sync
+checkBackendConnection();
+setInterval(syncWithBackend, 100);
