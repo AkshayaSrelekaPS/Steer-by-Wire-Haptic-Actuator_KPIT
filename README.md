@@ -118,7 +118,7 @@ $$
 $$
 
 - **$\theta$:** Steering angle off-center ($^\circ$ or $\text{rad}$).
-- **$\omega = \frac{d\theta}{dt}$:** Angular velocity ($	ext{deg/s}$ or $\text{rad/s}$), smoothed by a 1st-order low-pass filter ($f_c = 25\text{ Hz}$).
+- **$\omega = \frac{d\theta}{dt}$:** Angular velocity ($\text{deg/s}$ or $\text{rad/s}$), smoothed by a 1st-order low-pass filter ($f_c = 25\text{ Hz}$).
 - **Speed-Scaling Law:**
   - *Parking speeds ($10\text{ km/h}$):* $K_p \approx 0.02\text{ Nm/deg}$ (effortless, lightweight maneuvering).
   - *Highway speeds ($120\text{ km/h}$):* $K_p \approx 0.08\text{ Nm/deg}$ and $B_d \approx 0.011\text{ Nm}\cdot\text{s/deg}$ (firm, stable directional cruise).
